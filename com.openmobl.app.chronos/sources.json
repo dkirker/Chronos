@@ -1,0 +1,14 @@
+[
+    { "source": "javascripts/crc.js" },
+    { "source": "javascripts/MetaWatch.js" },
+    
+    { "source": "app/assistants/app-assistant.js" },
+    
+    { "source": "app/models/PrefsDB.js" },
+    { "source": "app/models/PrefsManager.js" },
+    
+    { "scenes": "main", "source": "app/assistants/main-assistant.js" },
+    { "scenes": "mainstart", "source": "app/assistants/mainstart-assistant.js" },
+    { "scenes": "appsupportinfo", "source": "app/assistants/appsupportinfo-assistant.js" },
+    { "scenes": "about", "source": "app/assistants/about-assistant.js" }
+]

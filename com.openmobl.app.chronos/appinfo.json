@@ -1,0 +1,19 @@
+{
+    "title": "Chronos",
+    "type": "web",
+    "noWindow": true,
+    "main": "index.html",
+    "icon": "icon.png",
+    "smallicon": "smallicon.png",
+    "splashicon": "largeicon.png",
+    "splashBackground": "images/splash.png",
+    "id": "com.openmobl.app.chronos",
+    "version": "0.1.0",
+    "vendor": "OpenMobl Systems",
+    "vendorurl": "http://www.openmobl.com/",
+    "removable": "true",
+    "keywords": ["Chronus", "Khronos", "Time", "MetaWatch", "watch"],
+    "theme": "palm-light",
+
+    "copyright": "Copyright © 2013 OpenMobl Systems. All Rights Reserved. Portions copyright Palm, Inc., or its subsidiaries."
+}

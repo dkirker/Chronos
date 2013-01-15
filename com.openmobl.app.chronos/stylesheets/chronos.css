@@ -1,0 +1,193 @@
+/*
+    The contents of this file are subject to the Mozilla Public License
+    Version 1.1 (the "License"); you may not use this file except in
+    compliance with the License. You may obtain a copy of the License at
+    http://www.mozilla.org/MPL/
+
+    Software distributed under the License is distributed on an "AS IS"
+    basis, WITHOUT WARRANTY OF ANY KIND, either express or implied. See the
+    License for the specific language governing rights and limitations
+    under the License.
+
+    The Original Code is OpenMobl Systems code.
+
+    The Initial Developer of the Original Code is OpenMobl Systems.
+    Portions created by OpenMobl Systems are Copyright (C) 2010-2011
+    OpenMobl Systems. All Rights Reserved.
+
+    Contributor(s):
+        OpenMobl Systems
+        Donald C. Kirker <donald.kirker@openmobl.com>
+
+    Alternatively, the contents of this file may be used under the terms
+    of the GNU General Public License Version 2 license (the  "GPL"), in
+    which case the provisions of GPL License are applicable instead of
+    those above. If you wish to allow use of your version of this file only
+    under the terms of the GPL License and not to allow others to use
+    your version of this file under the MPL, indicate your decision by
+    deleting the provisions above and replace them with the notice and
+    other provisions required by the GPL License. If you do not delete
+    the provisions above, a recipient may use your version of this file
+    under either the MPL or the GPL License.
+*/
+
+.chronos-wallpaper
+{
+    position: fixed;
+    width: 100%;   
+    height: 480px;   
+    top: 0;                 
+    left: 0;            
+    z-index: -100;
+    background: #000 url(../images/background.png) no-repeat;
+}
+
+/* Help subsytem --- MPLv1.1/GPLv2 code */
+.form .palm-row-wrapper .label.left
+{
+	padding-left: 6px;
+	-webkit-palm-mouse-target: ignore;
+}
+.form .palm-row-wrapper .sliderTitle
+{
+	padding-right: 22px;
+	line-height: 26px;
+	height: 26px;
+	vertical-align: middle;
+}
+.form .palm-row-wrapper .slider
+{
+	margin-top: -6px;
+	padding-bottom: 18px;
+}
+.form .palm-list-selector .label
+{
+	float: left;
+}
+.form .palm-list-selector .title
+{
+	text-align: right;
+}
+.form .noflip .palm-list-selector .label
+{
+	float: right;
+}
+.form .noflip .palm-list-selector .title
+{
+	text-align: left;
+}
+.form .textfield-group .hint-text
+{
+	color: #666;
+}
+body.palm-dark .form .textfield-group .hint-text
+{
+	color: #ccc;
+}
+.form .palm-group.disabled
+{
+	opacity: 0.35;
+}
+
+.form .palm-row .palm-row-wrapper
+{
+	position: relative;
+}
+.form .palm-row .palm-row-wrapper:not(.textfield-group)
+{
+	min-height: 53px;
+}
+.form .palm-row .palm-row-wrapper.textfield-group
+{
+	min-height: 23px;
+}
+.form .palm-row .palm-row-wrapper.textfield-group .help-overlay
+{
+	top: -13px;
+	left: -13px;
+	bottom: -11px;
+	right: -13px;
+}
+.form .palm-row .palm-row-wrapper .help-overlay
+{
+	display: none;
+	position: absolute;
+	z-index: 10000;
+	width: auto;
+	height: auto;
+	border: 20px;
+	top: 2px;
+	left: 2px;
+	right: 2px;
+	bottom: 4px;
+	-webkit-border-image: url(../images/helprow.png) 20 20 20 20 stretch stretch;
+}
+.form .palm-row.first .palm-row-wrapper .help-overlay
+{
+	-webkit-border-image: url(../images/helprow-first.png) 20 20 20 20 stretch stretch;
+}
+.form .palm-row.last .palm-row-wrapper .help-overlay
+{
+	-webkit-border-image: url(../images/helprow-last.png) 20 20 20 20 stretch stretch;
+	bottom: 2px;
+}
+.form .palm-row.single .palm-row-wrapper .help-overlay
+{
+	-webkit-border-image: url(../images/helprow-single.png) 20 20 20 20 stretch stretch;
+	bottom: 3px;
+}
+.form .palm-row.last .palm-row-wrapper.textfield-group .help-overlay,
+.form .palm-row.single .palm-row-wrapper.textfield-group .help-overlay
+{
+	bottom: -13px;
+}
+.form .palm-group
+{
+	position: relative;
+}
+.form .palm-group > .help-overlay
+{
+	display: none;
+	position: absolute;
+	z-index: 10000;
+	width: auto;
+	height: auto;
+	border: 20px;
+	top: -12px;
+	left: -14px;
+	bottom: -13px;
+	right: -13px;
+	-webkit-border-image: url(../images/helprow-single.png) 20 20 20 20 stretch stretch;
+}
+.form.help .palm-row .palm-row-wrapper .help-overlay,
+.form.help .palm-group > .help-overlay
+{
+	display: block;
+}
+
+.form .help-toggle
+{
+	position: absolute;
+	right: 11px;
+	top: 11px;
+	width: 32px;
+	height: 32px;
+	background-position: 0px 0px;
+	background-repeat: no-repeat;
+	background-image: url(../images/help-toggle.png);
+}
+.form .help-toggle.selected
+{
+	background-position: 0px -32px;
+}
+
+div#data
+{
+    margin: 10px;
+}
+
+/* App Support Info */
+
+.app-support-info-item.facebook 		{ background-image: url(../images/providers/facebook-32x32.png); }
+.app-support-info-item.twitter 			{ background-image: url(../images/providers/twitter-32x32.png); }
+
