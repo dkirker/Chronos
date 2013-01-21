@@ -283,7 +283,7 @@ MainAssistant.prototype.openReadReady = function(objData)
     };
     
     //this.writePort(this.watch.deviceType(), success.bind(this));
-    //this.writePort(this.watch.vibrate(100,500,4), success.bind(this));
+    this.writePort(this.watch.vibrate(100,500,4), success.bind(this));
     this.writePort(this.watch.setClock(new Date()), success.bind(this));
     
     var writeCallback = function(data) {
@@ -302,7 +302,7 @@ MainAssistant.prototype.openReadReady = function(objData)
     }.bind(this);
     
     this.handleTimeout = this.controller.window.setTimeout(this.readPort.bind(this, success), this.serialPortPollRate);
-}
+};
 
 MainAssistant.prototype.readPort = function(success)
 {
@@ -385,5 +385,59 @@ MainAssistant.prototype.disconnectSPP = function()
             }
         });
     } 
+};
+
+MainAssistant.prototype.buzzWatch = function()
+{
+    Mojo.Log.info("buzzWatch: ");
+    
+    this.writePort(this.watch.vibrate(200,100,3), success.bind(this));
+    
+    //use "setTimeout" here because the SPP input buffer might not be full yet
+    var success = function(data) {
+        this.readPortSuccess(data);
+    }.bind(this);
+    
+    this.handleTimeout = this.controller.window.setTimeout(this.readPort.bind(this, success), this.serialPortPollRate);
+};
+
+MainAssistant.prototype.displayNotification = function(text)
+{
+    Mojo.Log.info("displayNotification: ", text);
+    
+    var success = function(data) {
+        Mojo.Log.info("Write success!", JSON.stringify(data));
+        this.readPort(this.readPortSuccess.bind(this));
+    };
+    
+    var writeCallback = function(data) {
+        Mojo.Log.info("Writing for image");
+        this.writePort(data, function(){ Mojo.Log.info("Wrote image data"); });
+    };
+    
+    //var image = this.watch.renderText(template, text);
+    var image = "00000003C0000000000000001FF000000000000000393E000000000000007FFF00000000000000FFFF00000000000001FFFF80000000000001FFFFC0000000000001FFFFC0000000000001FFFFC0000000000001FFFFC0000000000001DF0FE00000000000018F27E00000000000016777E0000000000001FF77E0000000000001FFF7E0000000000001E07FE0000000000001C00FE0000000000001800FE0000000000001000FE0000000000001803FF0000000000001E07FF0000000000001B1C3F80000000000018F83F80000000000038201FC0000000000030001FC0000000000070000FE00000000000E0000FF00000000001E0000FF00000000003C00007F80000000003C00007FC0000000007800007FC0000000007800003FE000000000F800003FF000000000F000001FF000000001F000001FF800000001E000001FF800000001E000000FF800000003E000000FFC00000003C000000FFC00000007C000000FFE00000007C000000FFE0000000FC000000FFE0000000FC000000FFE0000000FC000000FFE0000000FC000001FFC0000000C6000007FFC000000183800004FFE000000301C00004FE6000001E01E000047E6000003800F00004386000002000F800040030000020007C00040018000020003C000C000C000020003C001C00020000200018001C0002000020000800F80006000060000C03F8000E0000600007FFF8001C0000600003FFF800780000300003FFF801C000003F8007FFF8038000000FE00FFFF80600000000F81F001C0C000000001F380004180000000001F00003F000000000000000000000000";
+    var binaryImage = this.convertHexToBinary(image);
+    
+    this.watch.writeImage(binaryImage, 0, 30, 66, 66, MetaWatch.kMode.NOTIFICATION, writeCallback.bind(this));
+    
+    //use "setTimeout" here because the SPP input buffer might not be full yet
+    var success = function(data) {
+        this.readPortSuccess(data);
+    }.bind(this);
+    
+    this.handleTimeout = this.controller.window.setTimeout(this.readPort.bind(this, success), this.serialPortPollRate);
+}
+
+MainAssistant.prototype.handleWatchCommand = function(params)
+{
+    switch (params.command) {
+        case "notification":
+            // params.data.text
+            this.buzzWatch();
+            if (params.data && params.data.text)
+                this.displayNotification(params.data.text);
+            break;
+    }
 };
 

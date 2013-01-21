@@ -10,6 +10,8 @@ function MetaWatch()
 {
     this.crc = new CRC(true);
     this.crc.test();
+    
+    this.isGen2 = true; // TODO: This needs to be a check
 }
 
 MetaWatch.kButtons =
@@ -110,7 +112,7 @@ MetaWatch.prototype.writeBuffer = function(mode, writeCallback,
     if (writeCallback) {
         var option = mode;
         
-        if (row2 !== undefined) {
+        if (row2 === undefined) {
             option = option | 0x10;
         }
         
@@ -118,13 +120,14 @@ MetaWatch.prototype.writeBuffer = function(mode, writeCallback,
                      String.fromCharCode(0x40) +
                      String.fromCharCode(option) +
                      String.fromCharCode(row1) + 
-                     data1 +
-                     String.fromCharCode(0x00);
+                     data1;
                      
         if (row2 !== undefined) {
             packet = packet +
                      String.fromCharCode(row2) +
                      data2;
+        } else {
+            packet = packet + String.fromCharCode(0x00);
         }
         
         var toSend = this.prepareForTx(packet);
@@ -135,14 +138,42 @@ MetaWatch.prototype.writeBuffer = function(mode, writeCallback,
 
 MetaWatch.prototype.updateDisplay = function(mode, activate)
 {
-    if (activate) {
-        mode = mode | 0x10;
+    var bufferType = mode;
+    
+    if (activate && !this.isGen2Watch()) {
+        bufferType = mode | 0x10;
     }
     
     var message = "" +
-                  String.fromCharCode(0x43) +
-                  String.fromCharCode(mode);
+                  String.fromCharCode(0x43);
+    
+    if (this.isGen2Watch()) {
+        var showGrid = false;
+        var pageId = 0;
+        var changePage = false;
 
+        var baseCode = 0x00;
+        if (bufferType == 0) {
+            baseCode = 0x80;
+        }
+        var code = baseCode | ((showGrid ? 0 : 1) << 6)
+            | ((changePage ? 1 : 0) << 5) | (pageId << 2) | bufferType;
+        var options = code & 0xFF;
+        
+        message = message + String.fromCharCode(options);
+    } else {
+        message = message + String.fromCharCode(bufferType);
+    }
+
+    return this.prepareForTx(message);
+};
+
+MetaWatch.prototype.changeMode = function(mode)
+{
+    var message = "" +
+                  String.fromCharCode(0xa6) +
+                  String.fromCharCode(mode | 0x10);
+    
     return this.prepareForTx(message);
 };
 
@@ -152,6 +183,9 @@ MetaWatch.prototype.clearDisplay = function(mode, update, writeCallback)
         writeCallback(this.loadTemplate(mode, 0));
         if (update) {
             writeCallback(this.updateDisplay(mode));
+            if (this.isGen2Watch()) {
+                writeCallback(this.changeMode(mode));
+            }
         }
     }
 };
@@ -176,6 +210,7 @@ MetaWatch.prototype.writeImage = function(image, xoff, yoff, width, height,
         
         for (var y = 0; y < height; y++) {
             var rowdata = "";
+            var row2data = "";
             
             for (var x = 0; x < width; x += 8) {
                 var byte = 0;
@@ -186,19 +221,48 @@ MetaWatch.prototype.writeImage = function(image, xoff, yoff, width, height,
                     
                     byte = ((byte >> 1) | (pixelData << 7));
                     
-                    i++; /* Just play dumb :) */
+                    i++; // Just play dumb :)
                 }
                 
                 rowdata = rowdata + String.fromCharCode(byte);
             }
             
+            if ((y + 1) < height) {
+                for (var x = 0; x < width; x += 8) {
+                    var byte = 0;
+                    
+                    for (var pindex = 0; pindex < 8; pindex++) {
+                        var pixel = image.charAt(i);
+                        var pixelData = (pixel === "0") ? 0 : 1;
+                        
+                        byte = ((byte >> 1) | (pixelData << 7));
+                        
+                        i++; // Just play dumb :)
+                    }
+                    
+                    row2data = row2data + String.fromCharCode(byte);
+                }
+            } else {
+                row2data = undefined;
+            }
+            
             Mojo.Log.info("Writing row: ", y);
             this.writeBuffer(mode, writeCallback, y + yoff, rowdata,
-                             undefined, undefined);
+                             (row2data !== undefined) ? (y + yoff + 1) : undefined, row2data);
+            if ((y + 1) < height)
+                y++;
         }
         
         writeCallback(this.updateDisplay(mode));
+        if (this.isGen2Watch()) {
+            writeCallback(this.changeMode(mode));
+        }
     }
+};
+
+MetaWatch.prototype.isGen2Watch = function()
+{
+    return this.isGen2;
 };
 
 MetaWatch.prototype.toHex = function(str)

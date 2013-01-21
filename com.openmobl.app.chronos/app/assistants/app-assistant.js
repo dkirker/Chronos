@@ -130,8 +130,16 @@ AppAssistant.prototype.handleLaunch = function(params)
     Mojo.Log.info("Launched with params: ", Object.toJSON(params));
 
     //this.launchSceneInMainCard(this.mainStageName, this.mainSceneName, params);
-    this.launchSceneInMainCard(this.altStageName, this.altSceneName, Mojo.Controller.StageType.card, {});
-    this.launchSceneInMainCard(this.mainStageName, this.mainSceneName, Mojo.Controller.StageType.dashboard, params);
+    var stageController = this.controller.getStageProxy(this.mainStageName);
+    // The app is not running, we need to launch it. Then we need to process any incoming messages.
+    if (!stageController) {
+        this.launchSceneInMainCard(this.altStageName, this.altSceneName, Mojo.Controller.StageType.card, {});
+        this.launchSceneInMainCard(this.mainStageName, this.mainSceneName, Mojo.Controller.StageType.dashboard, params);
+    }
+    
+    if (params) {
+        stageController.delegateToSceneAssistant("handleWatchCommand", params);
+    }
 };
 
 AppAssistant.prototype.handleCommand = function(event)
