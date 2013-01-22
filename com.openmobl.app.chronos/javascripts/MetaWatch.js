@@ -46,6 +46,12 @@ MetaWatch.kMode = {
     "SCROLL": 3
 };
 
+MetaWatch.kDimensions = {
+    "SCREEN_WIDTH": 96,
+    "SCREEN_HEIGHT": 96,
+    "BUFFER_ROW_BYTES": 12
+};
+
 MetaWatch.prototype.prepareForTx = function(message)
 {
     Mojo.Log.info("Message length = " + message.length);
@@ -55,8 +61,8 @@ MetaWatch.prototype.prepareForTx = function(message)
     
     var crc = this.crc.checksum(datagram);
     
-    datagram = datagram + String.fromCharCode(crc & 0xFF) +
-                          String.fromCharCode(crc >> 8);
+    datagram += String.fromCharCode(crc & 0xFF) +
+                String.fromCharCode(crc >> 8);
     
     Mojo.Log.info("Preparing to send: message(", this.toHex(message),
                   "), datagram(" + this.toHex(datagram) + ")");
@@ -160,9 +166,9 @@ MetaWatch.prototype.updateDisplay = function(mode, activate)
             | ((changePage ? 1 : 0) << 5) | (pageId << 2) | bufferType;
         var options = code & 0xFF;
         
-        message = message + String.fromCharCode(options);
+        message += String.fromCharCode(options);
     } else {
-        message = message + String.fromCharCode(bufferType);
+        message += String.fromCharCode(bufferType);
     }
 
     return this.prepareForTx(message);
@@ -203,54 +209,83 @@ MetaWatch.prototype.loadTemplate = function(mode, filled)
 MetaWatch.prototype.writeImage = function(image, xoff, yoff, width, height,
                                           mode, writeCallback)
 {
+    this.writeLcdBuffer(image, mode, writeCallback);
+};
+
+function bin2String(array) {
+  var result = "";
+  for (var i = 0; i < array.length; i++) {
+    result += String.fromCharCode(parseInt(array[i], 2));
+  }
+  return result;
+}
+
+MetaWatch.prototype.createLcdBuffer2 = function(image)
+{
+    var array = [];
+    var len = image.length / 8;
+    for (var i = 0; i < len; i += 8) {
+        array.push(image.substr(i * 8, 8));
+    }
+    return bin2String(array); //image.match(/[0-1]{8}/g));
+};
+
+MetaWatch.prototype.createLcdBuffer = function(image)
+{
+    var lcdBuffer = "";
+    var length = (MetaWatch.kDimensions.SCREEN_HEIGHT * MetaWatch.kDimensions.SCREEN_WIDTH) / 8;
+    
+    for (var i = 0; i < length; i++) {
+        /*var p = [];
+        
+        for (var j = 0; j < 8; j++) {
+            if (image.charAt(i * 8 + j) == "1")
+                p[j] = 1;
+            else
+                p[j] = 0;
+        }
+        
+        var byte = (p[7] * 128 + p[6] * 64 + p[5] * 32 + p[4] * 16
+					+ p[3] * 8 + p[2] * 4 + p[1] * 2 + p[0] * 1);*/
+        var byte = 0;
+        for (var pindex = 0; pindex < 8; pindex++) {
+            var pixel = image.charAt(i * 8 + pindex);
+            var pixelData = (pixel === "0") ? 0 : 1;
+            
+            byte = ((byte >> 1) | (pixelData << 7));
+        }
+        lcdBuffer += String.fromCharCode(byte);
+    }
+    
+    return lcdBuffer;
+};
+
+MetaWatch.prototype.writeLcdBuffer = function(image, mode, writeCallback)
+{
     if (writeCallback) {
         this.clearDisplay(mode, true, writeCallback);
         
-        var i = 0;
+        var lcdBuffer = this.createLcdBuffer(image);
         
-        for (var y = 0; y < height; y++) {
-            var rowdata = "";
-            var row2data = "";
+        for (var y = 0; y < MetaWatch.kDimensions.SCREEN_HEIGHT; y += 2) {
+            var rowA = "";
+            var rowB = "";
             
-            for (var x = 0; x < width; x += 8) {
-                var byte = 0;
-                
-                for (var pindex = 0; pindex < 8; pindex++) {
-                    var pixel = image.charAt(i);
-                    var pixelData = (pixel === "0") ? 0 : 1;
-                    
-                    byte = ((byte >> 1) | (pixelData << 7));
-                    
-                    i++; // Just play dumb :)
-                }
-                
-                rowdata = rowdata + String.fromCharCode(byte);
+            for (var x = 0; x < MetaWatch.kDimensions.BUFFER_ROW_BYTES; x++) {
+                rowA += lcdBuffer.charAt(y * MetaWatch.kDimensions.BUFFER_ROW_BYTES + x);
+            }            
+            for (var x = 0; x < MetaWatch.kDimensions.BUFFER_ROW_BYTES; x++) {
+                rowB += lcdBuffer.charAt((y + 1) * MetaWatch.kDimensions.BUFFER_ROW_BYTES + x);
             }
             
-            if ((y + 1) < height) {
-                for (var x = 0; x < width; x += 8) {
-                    var byte = 0;
-                    
-                    for (var pindex = 0; pindex < 8; pindex++) {
-                        var pixel = image.charAt(i);
-                        var pixelData = (pixel === "0") ? 0 : 1;
-                        
-                        byte = ((byte >> 1) | (pixelData << 7));
-                        
-                        i++; // Just play dumb :)
-                    }
-                    
-                    row2data = row2data + String.fromCharCode(byte);
-                }
-            } else {
-                row2data = undefined;
-            }
+            /*var rowAStart = (y * MetaWatch.kDimensions.BUFFER_ROW_BYTES);
+            var rowBStart = ((y + 1) * MetaWatch.kDimensions.BUFFER_ROW_BYTES);
+            var rowA = lcdBuffer.substr(rowAStart, MetaWatch.kDimensions.BUFFER_ROW_BYTES);
+            var rowB = lcdBuffer.substr(rowBStart, MetaWatch.kDimensions.BUFFER_ROW_BYTES);*/
+            
             
             Mojo.Log.info("Writing row: ", y);
-            this.writeBuffer(mode, writeCallback, y + yoff, rowdata,
-                             (row2data !== undefined) ? (y + yoff + 1) : undefined, row2data);
-            if ((y + 1) < height)
-                y++;
+            this.writeBuffer(mode, writeCallback, y, rowA, y + 1, rowB);
         }
         
         writeCallback(this.updateDisplay(mode));
