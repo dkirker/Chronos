@@ -32,6 +32,8 @@
     under either the MPL or the GPL License.
  */
 
+MainAssistant.kReconnectTimeout = 60 * 1000; // 60 seconds
+
 function MainAssistant()
 {
     this.watch = new MetaWatch();
@@ -45,6 +47,8 @@ function MainAssistant()
     this.message = "";
     
     this.watchServiceName = $L("Watch Service");
+    
+    this.reconnectTimer = undefined;
 }
 
 MainAssistant.prototype.aboutToActivate = function(callback)
@@ -161,6 +165,28 @@ MainAssistant.prototype.getDevicesSuccess = function(objData)
  
 };
 
+MainAssistant.prototype.connect = function()
+{
+    this.reconnectTimer = undefined;
+    this.getBTDevices = this.controller.serviceRequest("palm://com.palm.bluetooth/gap", {
+                                                    method: "gettrusteddevices",
+                                                    parameters: {},
+                                                    onSuccess: this.getDevicesSuccess.bind(this),
+                                                    onFailure: function(failData){
+                                                            Mojo.Log.error("gettrusteddevices, errCode: ", failData.errorCode);
+                                                            this.updateMessage(this.watchServiceName, $L("Failed: ") + failData.errorCode + " " + failData.errorText);
+                                                            this.reconnect();
+                                                    }                                                            
+                                                });
+};
+
+MainAssistant.prototype.reconnect = function()
+{
+    if (!this.reconnectTimer) {
+        this.reconnectTimer = setTimeout(this.connect.bind(this),MainAssistant.kReconnectTimeout);
+    }
+};
+
 MainAssistant.prototype.sppNotify = function(objData)
 {
     var that = this; //used to scope this here.
@@ -176,16 +202,6 @@ MainAssistant.prototype.sppNotify = function(objData)
                                     parameters: { "servicename": "SPP slave" },
                                     onSuccess: function(e) {
                                         Mojo.Log.info("Server enabled");
-                                        
-                                        //get a list of paired GPS devices and filter using the getDevicesSuccess function
-                                        /*this.getBTDevices = this.controller.serviceRequest("palm://com.palm.bluetooth/gap", {
-                                                                        method: "gettrusteddevices",
-                                                                        parameters: {},
-                                                                        onSuccess: this.getDevicesSuccess.bind(this),
-                                                                        onFailure: function(failData){
-                                                                            Mojo.Log.error("gettrusteddevices, errCode: ", failData.errorCode);
-                                                                        }                                                            
-                                                                    });*/
                                     }.bind(this),
                                     onFailure: function(e) {
                                         Mojo.Log.error("Unable to Open SPP Port, errCode: ", e.errorCode, " ", e.errorText);
@@ -231,18 +247,11 @@ MainAssistant.prototype.sppNotify = function(objData)
                 case "notifndisconnected":
                     Mojo.Log.info("Device has terminated the connection or is out of range...");
                     this.updateMessage(this.watchServiceName, $L("Disconnected..."));
+                    this.connect();
                     break;
                     
                 case "notifnserverenabled":
-                    this.getBTDevices = this.controller.serviceRequest("palm://com.palm.bluetooth/gap", {
-                                                                        method: "gettrusteddevices",
-                                                                        parameters: {},
-                                                                        onSuccess: this.getDevicesSuccess.bind(this),
-                                                                        onFailure: function(failData){
-                                                                            Mojo.Log.error("gettrusteddevices, errCode: ", failData.errorCode);
-                                                                            this.updateMessage(this.watchServiceName, $L("Failed: ") + failData.errorCode + " " + failData.errorText);
-                                                                        }                                                            
-                                                                    });
+                    this.connect();
                     break;
 
                 default:
