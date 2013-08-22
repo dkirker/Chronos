@@ -115,8 +115,19 @@ AppAssistant.prototype.considerForNotification = function(notificationData)
 	*/
 };
 
+AppAssistant.prototype.handleParamsWait = function(stageController, params)
+{
+	if (stageController.isActiveAndHasScenes()) {
+		stageController.delegateToSceneAssistant("handleWatchCommand", params);
+	} else {
+		this.waitTimeout = this.controller.window.setTimeout(this.handleParamsWait.bind(this, stageController, params), 10);
+	}
+};
+
 AppAssistant.prototype.handleLaunch = function(params)
 {
+	var wait = false;
+	
     Mojo.Log.info("AppAssistant#handleLaunch");
 	/*
 	This function is called after the application has launched by the user or
@@ -135,11 +146,23 @@ AppAssistant.prototype.handleLaunch = function(params)
     if (!stageController) {
         this.launchSceneInMainCard(this.altStageName, this.altSceneName, Mojo.Controller.StageType.card, {});
         this.launchSceneInMainCard(this.mainStageName, this.mainSceneName, Mojo.Controller.StageType.dashboard, params);
+		
+		wait = true;
     }
     
+	stageController = this.controller.getStageProxy(this.mainStageName);
     if (params) {
-        stageController.delegateToSceneAssistant("handleWatchCommand", params);
+		if (wait) {
+			this.handleParamsWait(stageController, params);
+		} else {
+			stageController.delegateToSceneAssistant("handleWatchCommand", params);
+		}
     }
+};
+
+AppAssistant.prototype.handleRelaunch = function(params)
+{
+	this.handleLaunch(params);
 };
 
 AppAssistant.prototype.handleCommand = function(event)

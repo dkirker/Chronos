@@ -49,6 +49,8 @@ function MainAssistant()
     this.watchServiceName = $L("Watch Service");
     
     this.reconnectTimer = undefined;
+	
+	this.lastState = "notifndisconnected";
 }
 
 MainAssistant.prototype.aboutToActivate = function(callback)
@@ -93,9 +95,9 @@ MainAssistant.prototype.onIconTap = function()
 {
     if (this.iconCallback) {
         this.iconCallback();
-    } /*else {
-        Mojo.Controller.getAppController().closeStage(this.windowName);
-    }*/
+    } else if (this.lastState === "notifndisconnected") {
+		this.reconnect();
+    }
 };
   
 MainAssistant.prototype.onMessageTap = function()
@@ -214,6 +216,8 @@ MainAssistant.prototype.sppNotify = function(objData)
 
     for(var key in objData) {
         if (key === "notification") {
+			this.lastState = objData.notification;
+			
             switch(objData.notification){
                 case "notifnservicenames":
                     Mojo.Log.info("SPP service name: ", objData.services[0]);
@@ -247,7 +251,7 @@ MainAssistant.prototype.sppNotify = function(objData)
                 case "notifndisconnected":
                     Mojo.Log.info("Device has terminated the connection or is out of range...");
                     this.updateMessage(this.watchServiceName, $L("Disconnected..."));
-                    this.connect();
+                    this.reconnect();
                     break;
                     
                 case "notifnserverenabled":
@@ -397,22 +401,29 @@ MainAssistant.prototype.disconnectSPP = function()
     } 
 };
 
-MainAssistant.prototype.buzzWatch = function()
+MainAssistant.prototype.buzzWatch = function(params)
 {
-    Mojo.Log.info("buzzWatch: ");
-    
-    this.writePort(this.watch.vibrate(300,500,3), success.bind(this));
-    
+	var on = params.on || 300;
+	var off = params.off || 500;
+	var count = params.count || 3;
+	
+    Mojo.Log.info("buzzWatch: {on: ", on, ", off: ", off, ", count: ", count, "}");
+
     //use "setTimeout" here because the SPP input buffer might not be full yet
     var success = function(data) {
         this.readPortSuccess(data);
-    }.bind(this);
+    }.bind(this);    
+
+    this.writePort(this.watch.vibrate(on, off, count), success.bind(this));
     
     this.handleTimeout = this.controller.window.setTimeout(this.readPort.bind(this, success), this.serialPortPollRate);
 };
 
-MainAssistant.prototype.displayNotification = function(text)
+MainAssistant.prototype.displayNotification = function(params)
 {
+	var text = params.data || "";
+	var type = params.type || "text";
+	
     Mojo.Log.info("displayNotification: ", text);
     
     var success = function(data) {
@@ -444,12 +455,32 @@ MainAssistant.prototype.displayNotification = function(text)
 MainAssistant.prototype.handleWatchCommand = function(params)
 {
     switch (params.command) {
-        case "notification":
-            // params.data.text
+        case "notification": // params.data = {text: string}
             this.buzzWatch();
             if (params.data && params.data.text)
-                this.displayNotification(params.data.text);
+                this.displayNotification({"type": "text", "data": params.data.text});
             break;
+		
+		case "alarm": // params.data = {on: #ms, off: #ms, count: #, payload: {type: text || image, data: string}}
+			var on = 700;
+			var off = 500;
+			var count = 10;
+			
+			if (params.data) {
+				if (params.data.on)
+					on = params.data.on;
+				if (params.data.off)
+					off = params.data.off;
+				if (params.data.count)
+					count = params.data.count;
+					
+				if (params.data.payload) {
+					this.displayNotification(params.data.payload);
+				}
+			}
+			
+			this.buzzWatch({"on": on, "off": off, "count": count});
+			break;
     }
 };
 
