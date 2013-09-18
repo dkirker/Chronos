@@ -1,0 +1,9 @@
+description "Pebble Watch Service"
+
+start on stopped finish
+
+script
+  exec /usr/palm/services/com.palm.service.pebble/PebbleService.py
+end script
+
+respawn

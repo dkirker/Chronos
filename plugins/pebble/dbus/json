@@ -1,0 +1,14 @@
+{
+    "role": {
+        "exeName":"/opt/bin/python2.7",
+        "type": "regular",
+        "allowedNames": ["com.palm.service.pebble"]
+    },
+    "permissions": [
+        {
+            "service":"com.palm.service.pebble",
+            "inbound":["*"],
+            "outbound":["*"]
+        }
+    ]
+}

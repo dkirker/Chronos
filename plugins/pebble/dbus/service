@@ -1,0 +1,4 @@
+[D-BUS Service]
+Name=com.palm.service.pebble
+Exec=/usr/palm/services/com.palm.service.pebble/PebbleService.py
+Type=dynamic

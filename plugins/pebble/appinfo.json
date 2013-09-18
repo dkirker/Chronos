@@ -1,0 +1,10 @@
+{
+	"id": "com.palm.service.pebble",
+	"version": "0.1.0",
+	"vendor": "OpenMobl Systems",
+	"type": "web",
+	"main": "index.html",
+	"title": "Pebble",
+	"icon": "icon.png",
+	"visible": false
+}
