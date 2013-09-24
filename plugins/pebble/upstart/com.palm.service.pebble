@@ -2,8 +2,14 @@ description "Pebble Watch Service"
 
 start on stopped finish
 
+respawn
+
 script
-  exec /usr/palm/services/com.palm.service.pebble/PebbleService.py
+    PATH=$PATH:/opt/bin/
+
+    exec 2>>/var/log/pebble.log
+    set -x
+
+    exec /usr/palm/services/com.palm.service.pebble/PebbleService.py
 end script
 
-respawn
