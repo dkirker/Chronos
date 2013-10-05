@@ -7,9 +7,19 @@ respawn
 script
     PATH=$PATH:/opt/bin/
 
-    exec 2>>/var/log/pebble.log
+#    exec > /var/log/pebble.log 2>&1
     set -x
 
+#	exec /bin/sh -c "/opt/bin/python2.7 /usr/palm/services/com.palm.service.pebble/PebbleService.py >> /var/log/pebble.log"
+#    exec /usr/palm/services/com.palm.service.pebble/PebbleService.sh
     exec /usr/palm/services/com.palm.service.pebble/PebbleService.py
+end script
+
+post-stop script
+	pid=`ps ax | grep "/usr/palm/services/com.palm.service.pebble/PebbleService.py" | grep -v "grep" | awk '{print $1}'`
+
+	if [ "$pid" != "" ]; then
+		kill -9 $pid
+	fi
 end script
 

@@ -3,9 +3,22 @@
 from ls2 import main, LS2Service, add_timeout
 import os.path
 import pebble
+import time
+import sys
 
 SERIAL_RX_PREFIX = "/dev/spp_rx_"
 SERIAL_TX_PREFIX = "/dev/spp_tx_"
+
+LOG_FILE = "/var/log/pebble.log"
+
+#class Logger(object):
+#    def __init__(self, filename="Default.log"):
+#        self.terminal = sys.stdout
+#        self.log = open(filename, "a")
+#
+#    def write(self, message):
+#        self.terminal.write(message)
+#        self.log.write(message)
 
 class PalmBluetoothPebbleDevice(object):
     def __init__(self, instanceId):
@@ -34,6 +47,9 @@ class PebbleService(LS2Service):
         self.instanceId = None
         self.device = None
         self.pebble = None
+        self.address = None
+
+        self.sppSubscription = None
 
         self.scanTimer = None
         self.scanCount = 0
@@ -43,6 +59,8 @@ class PebbleService(LS2Service):
             ("sendNotificationSMS", self.sendNotificationSMSHandler),
             ("sendNotificationEmail", self.sendNotificationEmailHandler),
         ])
+
+        self.findAndConnect()
 
     def isConnected(self):
         return self.pebble is not None
@@ -65,14 +83,34 @@ class PebbleService(LS2Service):
             self.connectToPebble(pebbleDevice["address"])
 
     def connectToPebble(self, address):
-        self.sppSubscription = self.subscribe("palm://com.palm.bluetooth/spp/subscribenotifications", {"subscribe": True})
-        self.sppSubscription.setCallback(self.gotSPPUpdate)
+        if self.sppSubscription == None:
+            self.sppSubscription = self.subscribe("palm://com.palm.bluetooth/spp/subscribenotifications", {"subscribe": True})
+            self.sppSubscription.setCallback(self.gotSPPUpdate)
+
+        self.address = address
 
         request = self.call("palm://com.palm.bluetooth/spp/connect", {"address": address})
         request.setCallback(self.gotConnectResponse)
+        request.setErrback(self.gotConnectError)
 
     def gotConnectResponse(self, response):
         print "Got connect response"
+
+    def gotConnectError(self, response):
+        print "Got connect error"
+        #self.sppSubscription.cancel()
+        #self.sppSubscription = None
+
+    def disconnectFromPebble(self): #, address):
+        request = self.call("palm://com.palm.bluetooth/spp/disconnect", {"address": self.address})
+        request.setCallback(self.gotDisconnectResponse)
+        request.setErrback(self.gotDisconnectResponse)
+
+    def gotDisconnectResponse(self, response):
+        print "Got disconnect response"
+		
+        self.sppSubscription.cancel()
+        self.sppSubscription = None
 
     def gotSPPUpdate(self, response):
         print `response`
@@ -90,6 +128,7 @@ class PebbleService(LS2Service):
                 self.wait_for_serial()
         elif notifyType == "notifndisconnected":
             if response["instanceId"] == self.instanceId:
+                print "Notified of disconnect"
                 self.disconnected()
 
     def connectToSPPService(self, instanceId, serviceName):
@@ -127,7 +166,11 @@ class PebbleService(LS2Service):
             self.scanCount += 1
             return True
         else:
+            print "Timed out waiting for device"
             self.scanTimer.cancel()
+            self.scanTimer = None
+
+            add_timeout(self.disconnectFromPebble, 1)
             return False
 
     def connected(self):
@@ -150,6 +193,11 @@ class PebbleService(LS2Service):
 
     def checkConnected(self, message):
         if not self.isConnected():
+#            self.findAndConnect()
+#            time.sleep(4)
+#            if not self.isConnected():
+#                return False
+#            return True
             message.reply({"returnValue": False, "errorCode": -5000, "errorText": "Not connected to pebble watch"})
             return False
         return True
@@ -180,6 +228,8 @@ class PebbleService(LS2Service):
 
             self.pebble.notification_email(sender, subject, body)
             message.reply({"returnValue": True})
+
+#sys.stdout = Logger(LOG_FILE)
 
 PebbleService()
 

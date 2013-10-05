@@ -49,9 +49,13 @@ class ServiceRequest(object):
     def __init__(self, service, token, subscribe = False):
         self.service = service
         self.token = token
+        self.ls2Token = None
         self.isSubscription = subscribe
         self._callback = None
         self._errback = None
+
+    def tellLS2Token(self, token):
+        self.ls2Token = token
 
     def handleResponse(self, response):
         if response.get("returnValue") == False:
@@ -72,7 +76,8 @@ class ServiceRequest(object):
         return self
 
     def cancel(self):
-        self.service.cancel(token)
+        if self.isSubscription == True:
+            self.service.cancel(self.ls2Token)
 
 class LS2Client(object):
     def __init__(self, busName):
@@ -122,6 +127,7 @@ class LS2Client(object):
             if not request.isSubscription:
                 del self.requests[token]
 
+            request.tellLS2Token(token)
             request.handleResponse(response)
 
             return True
@@ -150,6 +156,14 @@ class LS2Client(object):
 
     def subscribe(self, uri, params):
         return self._call(uri, params, subscribe = True)
+
+    def cancel(self, token):
+        err = LSError()
+        lunaservice.LSCallCancel(self.handlePrv, token, err.ref)
+
+        del self.requests[token]
+
+        return True
 
 class LSMethod(Structure):
     _fields_ = (
