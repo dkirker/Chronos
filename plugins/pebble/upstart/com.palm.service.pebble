@@ -1,6 +1,7 @@
 description "Pebble Watch Service"
 
-start on stopped finish
+start on started bluetooth
+stop on stopping bluetooth
 
 respawn
 
