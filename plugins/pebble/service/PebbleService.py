@@ -58,6 +58,7 @@ class PebbleService(LS2Service):
             ("connect", self.connectHandler),
             ("sendNotificationSMS", self.sendNotificationSMSHandler),
             ("sendNotificationEmail", self.sendNotificationEmailHandler),
+            ("sendNowPlaying", self.sendNowPlayingHandler)
         ])
 
         self.findAndConnect()
@@ -178,6 +179,8 @@ class PebbleService(LS2Service):
 
         self.device = PalmBluetoothPebbleDevice(self.instanceId)
         self.pebble = pebble.Pebble(device = self.device)
+        
+        self.pebble.register_endpoint("MUSIC_CONTROL", self.musicControlHandler)
 
         print "Created pebble instance"
 
@@ -201,6 +204,14 @@ class PebbleService(LS2Service):
             message.reply({"returnValue": False, "errorCode": -5000, "errorText": "Not connected to pebble watch"})
             return False
         return True
+    
+    ######## Handler Endpoints ########
+    
+    def musicControlHandler(self, endpoint, response)
+        print "TODO musicControlHandler"
+
+    def mediabroadcastResponseHandler(self, response)
+        print "TODO mediabroadcastResponseHandler"
 
     ######## Bus methods ########
 
@@ -227,6 +238,15 @@ class PebbleService(LS2Service):
             body = message.payload["body"].encode("utf-8")
 
             self.pebble.notification_email(sender, subject, body)
+            message.reply({"returnValue": True})
+
+    def sendNowPlayingHandler(self, message)
+        if self.checkConnected(message):
+            track = message.payload["track"].encode("utf-8")
+            album = message.payload["album"].encode("utf-8")
+            artist = message.payload["artist"].encode("utf-8")
+            
+            self.pebble.set_nowplaying_metadata(track, album, artist)
             message.reply({"returnValue": True})
 
 #sys.stdout = Logger(LOG_FILE)
