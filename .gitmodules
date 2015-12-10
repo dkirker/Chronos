@@ -1,0 +1,3 @@
+[submodule "plugins/pebble/service/libpebble2"]
+	path = plugins/pebble/service/libpebble2
+	url = https://github.com/dkirker/libpebble2.git
